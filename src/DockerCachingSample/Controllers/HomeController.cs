@@ -19,16 +19,12 @@ namespace DockerCachingSample.Controllers
             _logger = logger;
         }
 
-        //Cache in any proxiesm including proxies.
-        [ResponseCache(Duration = 30, Location = ResponseCacheLocation.Any)]
         public IActionResult Index()
         {
-            _logger.LogCritical("Reached View Controller");
             return View();
         }
 
-        //My about page never changes so it will cache for a day
-        [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+        [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
         public IActionResult About()
         {
             ViewData["Message"] = "Your application description page.";
@@ -36,8 +32,7 @@ namespace DockerCachingSample.Controllers
             return View();
         }
 
-        //My contact page never changes so it will cache for a day
-        [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+        [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
         public IActionResult Contact()
         {
             ViewData["Message"] = "Your contact page.";

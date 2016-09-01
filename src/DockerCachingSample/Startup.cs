@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using System.Net;
 
 namespace DockerCachingSample
 {
@@ -29,9 +30,12 @@ namespace DockerCachingSample
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //Temporary work around for a Linux specific bug in StackExchange.Redis on CoreCLR.
+            //This should not be necesarry soon.
+            var ips = Dns.GetHostAddressesAsync("rediscache").Result;
             services.AddDistributedRedisCache(options =>
             {
-                options.Configuration = "127.0.0.1";
+                options.Configuration = ips.First().ToString();
                 options.InstanceName = "SampleInstance";
             });
             services.AddDistributedResponseCache();
@@ -42,7 +46,6 @@ namespace DockerCachingSample
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            var logger = loggerFactory.CreateLogger<Startup>();
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -54,19 +57,6 @@ namespace DockerCachingSample
             }
 
             app.UseStaticFiles();
-
-            app.Use(async (context, next) =>
-            {
-                var headers = context.Request.Headers.ToList();
-                var reqBuilder = new StringBuilder();
-                headers.ForEach(x =>reqBuilder.AppendLine($"{x.Key}={x.Value}"));
-                logger.LogCritical(reqBuilder.ToString());
-                logger.LogCritical("Middleware running.");
-                await next();
-                reqBuilder.Clear();
-                context.Response.Headers.ToList().ForEach(x => reqBuilder.AppendLine($"{x.Key}={x.Value}"));
-                logger.LogCritical(reqBuilder.ToString());
-            });
 
             app.UseResponseCaching();
 
